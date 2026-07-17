@@ -33,9 +33,10 @@ export default function ProductGrid({ products, loading }: ProductGridProps) {
   }
 
   return (
-    <div className="grid grid-cols-3 sm:grid-cols-2 md:grid-cols-3 gap-1.5 sm:gap-6 w-full px-1">
+    /* 📱 💻 Responsive Grid Fix */
+    <div className="grid grid-cols-3 sm:grid-cols-4 min-[2000px]:grid-cols-5 gap-1.5 sm:gap-6 w-full px-1">
       {products.map((item) => (
-        <div key={item.id} className="min-w-0">
+        <div key={item.id} className="min-w-0 overflow-hidden">
           <ProductCard
             id={item.id}
             title={item.title}

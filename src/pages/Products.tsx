@@ -3,7 +3,7 @@ import { supabase } from '../supabaseClient';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import SearchBar from '../components/SearchBar';
-import FeaturedLanes from '../components/FeaturedLanes'; // 🔄 Refactored layout engine
+import FeaturedLanes from '../components/FeaturedLanes'; 
 
 interface Product {
   id: number;
@@ -70,10 +70,7 @@ export default function Products() {
     fetchInventory();
   }, [searchQuery, selectedCategory]);
 
-  // Determine what categories are processed inside the lanes component mapping loop
-  const activeLanesList = selectedCategory === 'All'
-    ? categories
-    : [selectedCategory];
+  const activeLanesList = selectedCategory === 'All' ? categories : [selectedCategory];
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 font-sans">
@@ -90,7 +87,6 @@ export default function Products() {
           </div>
         </div>
 
-        {/* SELECTION BAR CHIPS CONTAINER */}
         <div className="flex flex-wrap items-center justify-center md:justify-start gap-1.5 bg-white p-3 sm:p-4 rounded-2xl border border-gray-200 shadow-3xs mb-8 mx-2">
           <span className="text-[11px] font-black uppercase tracking-wider text-gray-400 mr-2 hidden sm:inline">
             Filter View:
@@ -110,7 +106,6 @@ export default function Products() {
           ))}
         </div>
 
-        {/* UNIFIED DESIGN LANE RENDERING INJECTION */}
         <div className="w-full">
           {loading ? (
             <div className="py-20 text-center flex flex-col items-center justify-center gap-3">
@@ -121,7 +116,7 @@ export default function Products() {
             <FeaturedLanes 
               products={allProducts} 
               categories={activeLanesList} 
-              limitProducts={4} // Allows products exploration layout to display full 4-wide collections
+              limitProducts={5} 
             />
           )}
         </div>

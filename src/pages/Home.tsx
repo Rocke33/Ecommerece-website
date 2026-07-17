@@ -24,12 +24,8 @@ export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [categoriesList, setCategoriesList] = useState<string[]>([]);
 
-  // 🔢 PAGINATION FIXES
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [pageGroupStart, setPageGroupStart] = useState<number>(1);
-  
-  const itemsPerPage = 3; // Refactored uniform variable name
-  const maxPageButtonsVisible = 4;
+  const itemsPerPage = 5; // Updated to 5 items to match the responsive desktop width layout
 
   useEffect(() => {
     async function fetchDynamicCategories() {
@@ -53,7 +49,6 @@ export default function Home() {
 
   useEffect(() => {
     setCurrentPage(1);
-    setPageGroupStart(1);
   }, [searchQuery, selectedCategory]);
 
   useEffect(() => {
@@ -93,7 +88,7 @@ export default function Home() {
 
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedProducts = allProducts.slice(startIndex, startIndex + itemsPerPage);
-  const totalPages = Math.ceil(allProducts.length / itemsPerPage); // Fixed naming assignment
+  const totalPages = Math.ceil(allProducts.length / itemsPerPage);
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 font-sans">
@@ -165,7 +160,7 @@ export default function Home() {
                 <FeaturedLanes 
                   products={allProducts} 
                   categories={categoriesList} 
-                  limitProducts={3} 
+                  limitProducts={5} 
                 />
               )}
             </section>

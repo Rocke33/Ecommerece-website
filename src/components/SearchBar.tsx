@@ -99,38 +99,42 @@ export default function SearchBar({ onSearch, isLoading }: SearchBarProps) {
     <div className="w-full max-w-3xl mx-auto my-5 px-2 box-border relative z-40" ref={dropdownRef}>
       
       {/* 📦 Increased Outer Frame Border thickness to border-2 with deep high-visibility tracking */}
-      <div className="relative flex items-center bg-white border-2 border-gray-400 rounded-xl overflow-hidden shadow-sm hover:border-gray-600 focus-within:ring-4 focus-within:ring-[#ff9900]/30 focus-within:border-[#e47911] transition-all duration-150">
+      <div className="flex items-center bg-white border-2 border-gray-400 rounded-xl overflow-hidden shadow-sm hover:border-gray-600 focus-within:ring-4 focus-within:ring-[#ff9900]/30 focus-within:border-[#e47911] transition-all duration-150">
         
-        {/* Search Field input frame */}
-        <input
-          type="text"
-          value={inputValue}
-          onFocus={() => setShowDropdown(true)}
-          placeholder="Search GadgetHorizon..."
-          onChange={(e) => {
-            setInputValue(e.target.value);
-            setShowDropdown(true);
-          }}
-          onKeyDown={handleKeyDown}
-          className="w-full pl-4 pr-12 py-3 rounded-none bg-transparent font-sans text-gray-900 placeholder-gray-500 text-sm font-bold outline-hidden border-none focus:ring-0"
-        />
+        {/* ROW FLEXBOX CONTAINER (Groups input field and clear button inside a row layout) */}
+        <div className="flex-1 flex items-center relative min-w-0">
+          {/* Search Field input frame */}
+          <input
+            type="text"
+            value={inputValue}
+            onFocus={() => setShowDropdown(true)}
+            placeholder="Search GadgetHorizon..."
+            onChange={(e) => {
+              setInputValue(e.target.value);
+              setShowDropdown(true);
+            }}
+            onKeyDown={handleKeyDown}
+            className="w-full pl-4 pr-12 py-3 bg-transparent font-sans text-gray-900 placeholder-gray-500 text-sm font-bold outline-hidden border-none focus:ring-0"
+          />
 
-        {/* Clear string cross mark action link */}
-        {inputValue.length > 0 && !isLoading && (
-          <button
-            type="button"
-            onClick={handleClearSearch}
-            className="absolute right-16 p-1.5 rounded-full text-gray-500 hover:text-gray-900 hover:bg-gray-100 font-sans font-bold text-xs transition active:scale-90 cursor-pointer flex items-center justify-center w-6 h-6"
-          >
-            ✕
-          </button>
-        )}
+          {/* 🌟 MATCHING AMBER AMAZON COLOR SIGN CLEAR BUTTON */}
+          {inputValue.length > 0 && !isLoading && (
+            <button
+              type="button"
+              onClick={handleClearSearch}
+              className="absolute right-3 bg-[white] hover:bg-[#f3a847] active:scale-95 text-[#131921] font-black text-xl transition duration-150 rounded-full flex items-center justify-center w-7 h-7 shadow-xs  cursor-pointer select-none"
+              title="Clear search phrase"
+            >
+              ✕
+            </button>
+          )}
+        </div>
 
-        {/* 🎨 Right Side: Deep Signature Amazon Amber Yellow Search Action button with clear border boundary */}
+        {/* 🎨 Right Side Search Action button - Completely distinct column element */}
         <button
           type="button"
           onClick={() => handleSearchTrigger(inputValue)}
-          className="bg-[#febd69] hover:bg-[#f3a847] text-[#131921] border-l-2 border-gray-400 group-focus-within:border-[#e47911] self-stretch px-7 flex items-center justify-center cursor-pointer transition shrink-0"
+          className="bg-[#febd69] hover:bg-[#f3a847] text-[#131921] border-l-2 border-gray-400 self-stretch px-7 flex items-center justify-center cursor-pointer transition shrink-0"
           title="Submit Search request"
         >
           {isLoading ? (
@@ -142,7 +146,7 @@ export default function SearchBar({ onSearch, isLoading }: SearchBarProps) {
               fill="none" 
               viewBox="0 0 24 24" 
               stroke="currentColor" 
-              strokeWidth={2.8} // Thickened up search loop lines for sharp view matrices
+              strokeWidth={2.8}
             >
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
             </svg>

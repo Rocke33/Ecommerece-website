@@ -8,51 +8,92 @@ export default function Login() {
   const navigate = useNavigate();
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
+  const [name, setName] = useState<string>('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  
+  // 🔄 Explicit state toggle to separate Sign In and Registration workflows safely
+  const [isSignUpMode, setIsSignUpMode] = useState<boolean>(false);
 
-  const handleSignIn = async (e: React.FormEvent) => {
+  const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setErrorMsg(null);
 
+    const targetEmail = email.trim();
+
     try {
-      // 1. Try to sign in the user
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password: password,
-      });
+      if (isSignUpMode) {
+        // -------------------------------------------------------------
+        // STEP 1: Create the user in the official Supabase Auth system
+        // -------------------------------------------------------------
+        const { data, error: signUpError } = await supabase.auth.signUp({
+          email: targetEmail,
+          password: password,
+          options: {
+            data: {
+              display_name: name.trim(), // Securely saved in metadata for the Navbar
+            },
+          },
+        });
 
-      if (signInError) {
-        // 2. If credentials don't match, automatically attempt to sign them up!
-        if (signInError.message.toLowerCase().includes('invalid login credentials')) {
-          const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-            email: email.trim(),
-            password: password,
-          });
+        if (signUpError) {
+          if (signUpError.message.toLowerCase().includes('already registered')) {
+            throw new Error('This email is already registered. Switch to "Sign In" instead.');
+          }
+          throw signUpError;
+        }
 
-          if (signUpError) throw signUpError;
+        // -------------------------------------------------------------
+        // STEP 2: Save to your exact custom columns (id, created_at, name, email, password)
+        // -------------------------------------------------------------
+        if (data?.user) {
+          const { error: dbError } = await supabase
+            .from('users') // 👈 Make sure this matches your exact custom table name
+            .insert([
+              {
+                id: data.user.id,          // Maps to 'id' column (uuid)
+                created_at: new Date().toISOString(), // Maps to 'created_at' column (timestamptz)
+                name: name.trim(),         // Maps to 'name' column (text)
+                email: targetEmail,        // Maps to 'email' column (text)
+                password: password,        // Maps to 'password' column (text)
+              },
+            ]);
 
-          // If sign up succeeded and confirm email is off, log them in right away
-          if (signUpData?.user) {
-            const { error: retryError } = await supabase.auth.signInWithPassword({
-              email: email.trim(),
-              password: password,
-            });
-            if (retryError) throw retryError;
-            navigate('/');
-            return;
+          if (dbError) {
+            console.error("Custom database insertion failed:", dbError.message);
+            throw new Error(`Database registration log failed: ${dbError.message}`);
           }
         }
-        throw signInError;
-      }
 
-      if (data?.user) {
-        navigate('/');
+        if (data?.session || data?.user) {
+          navigate('/');
+        } else {
+          setErrorMsg('Account created! Please try logging in.');
+          setIsSignUpMode(false);
+          setPassword('');
+        }
+      } else {
+        // Mode B: Regular Sign In (Authenticates securely via Supabase Auth)
+        const { data, error: signInError } = await supabase.auth.signInWithPassword({
+          email: targetEmail,
+          password: password,
+        });
+
+        if (signInError) {
+          if (signInError.message.toLowerCase().includes('invalid login credentials')) {
+            throw new Error('Incorrect email or password. Please verify your credentials, or register a new account.');
+          }
+          throw signInError;
+        }
+
+        if (data?.user) {
+          navigate('/');
+        }
       }
     } catch (err: any) {
       console.error(err);
-      setErrorMsg(err?.message || 'Invalid email or password. Please try again.');
+      setErrorMsg(err?.message || 'Authentication failed. Please verify your entries.');
     } finally {
       setLoading(false);
     }
@@ -73,8 +114,12 @@ export default function Login() {
             <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white text-xl font-black mx-auto mb-4 shadow-lg shadow-blue-600/30">
               🛒
             </div>
-            <h1 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight">Welcome Back</h1>
-            <p className="text-xs md:text-sm text-gray-500 mt-1.5 font-medium">Sign in to access your custom shopping platform</p>
+            <h1 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight">
+              {isSignUpMode ? 'Create Account' : 'Welcome Back'}
+            </h1>
+            <p className="text-xs md:text-sm text-gray-500 mt-1.5 font-medium">
+              {isSignUpMode ? 'Get started with instant checkout privileges' : 'Sign in to access your custom shopping platform'}
+            </p>
           </div>
 
           {errorMsg && (
@@ -84,7 +129,25 @@ export default function Login() {
             </div>
           )}
 
-          <form onSubmit={handleSignIn} className="space-y-5">
+          <form onSubmit={handleAuthSubmit} className="space-y-5">
+            {isSignUpMode && (
+              <div>
+                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 ml-1">
+                  Full Name
+                </label>
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-gray-400 text-sm pointer-events-none">🙍</span>
+                  <input
+                    type="text"
+                    required={isSignUpMode}
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Your name"
+                    className="w-full text-xs md:text-sm border border-gray-200/80 bg-gray-50/50 pl-10 pr-4 py-3 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none font-medium transition-all duration-200 placeholder:text-gray-400/70"
+                  />
+                </div>
+              </div>
+            )}
             <div>
               <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 ml-1">
                 Email Address
@@ -125,18 +188,21 @@ export default function Login() {
                 disabled={loading}
                 className="w-full text-xs md:text-sm font-bold bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-3.5 rounded-xl shadow-lg shadow-blue-600/10 hover:shadow-xl hover:shadow-blue-600/20 transition-all duration-200 active:scale-[0.98] cursor-pointer text-center tracking-wide"
               >
-                {loading ? 'Authenticating User Account...' : 'Sign In'}
+                {loading ? 'Processing...' : isSignUpMode ? 'Register & Log In' : 'Sign In'}
               </button>
 
               <div className="text-center pt-2 border-t border-gray-100/80">
                 <p className="text-xs text-gray-500 font-medium">
-                  Don't have an account yet?{' '}
+                  {isSignUpMode ? 'Already registered on our records? ' : "Don't have an account yet? "}
                   <button
                     type="button"
-                    onClick={() => navigate('/register')}
+                    onClick={() => {
+                      setIsSignUpMode(!isSignUpMode);
+                      setErrorMsg(null);
+                    }}
                     className="text-blue-600 hover:text-blue-700 font-bold underline decoration-2 underline-offset-2 transition bg-transparent border-none p-0 cursor-pointer"
                   >
-                    Register
+                    {isSignUpMode ? 'Sign In Here' : 'Register'}
                   </button>
                 </p>
               </div>

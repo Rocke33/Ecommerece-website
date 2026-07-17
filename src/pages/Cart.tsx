@@ -222,30 +222,37 @@ export default function Cart() {
 
                   {/* Quantity Selector, Pricing, Delete Controls */}
                   <div className="flex flex-wrap items-center justify-between sm:justify-end gap-3 sm:gap-6 w-full sm:w-auto border-t sm:border-t-0 pt-3 sm:pt-0 border-gray-100">
-                    <div className="flex items-center border border-gray-200 rounded-lg bg-gray-50 p-0.5 shadow-2xs">
+                    
+                    {/* Boxed Quantity Control Stepper */}
+                    <div className="flex items-center border border-gray-300 rounded-xl overflow-hidden bg-white shadow-2xs h-9">
                       <button 
                         type="button"
                         onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
-                        className="px-2 py-1 text-xs text-gray-500 hover:text-gray-800 font-bold active:scale-95 cursor-pointer"
+                        disabled={item.quantity <= 1}
+                        className="w-9 h-full flex items-center justify-center text-base bg-red-50 text-red-600 hover:bg-red-500 hover:text-white border-r border-gray-200 transition-all duration-150 disabled:opacity-40 disabled:hover:bg-red-50 disabled:hover:text-red-600 disabled:cursor-not-allowed font-black active:scale-95 cursor-pointer select-none"
                       >
                         -
                       </button>
-                      <span className="px-2 text-xs font-black text-gray-900 min-w-[16px] text-center font-mono">{item.quantity}</span>
+                      <span className="px-3 text-xs font-black text-gray-900 min-w-[32px] text-center font-mono select-none">
+                        {item.quantity}
+                      </span>
                       <button 
                         type="button"
                         onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
-                        className="px-2 py-1 text-xs text-gray-500 hover:text-gray-800 font-bold active:scale-95 cursor-pointer"
+                        className="w-9 h-full flex items-center justify-center text-base bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white border-l border-gray-200 transition-all duration-150 font-black active:scale-95 cursor-pointer select-none"
                       >
                         +
                       </button>
                     </div>
 
-                    <div className="text-right sm:min-w-[70px]">
-                      <span className="text-xs font-black text-gray-900 font-mono">
+                    {/* Real-Time Scaled Row Price Matrix */}
+                    <div className="text-right sm:min-w-[80px]">
+                      <span className="text-sm sm:text-base font-black text-gray-950 font-mono tracking-tight">
                         ${(item.products.price * item.quantity).toFixed(2)}
                       </span>
                     </div>
 
+                    {/* Delete item action button */}
                     <button
                       type="button"
                       onClick={() => handleRemoveItem(item.id)}
@@ -256,6 +263,7 @@ export default function Cart() {
                       </svg>
                     </button>
                   </div>
+
                 </div>
               ))}
             </div>

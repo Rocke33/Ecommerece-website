@@ -13,14 +13,12 @@ interface Product {
 interface FeaturedLanesProps {
   products: Product[];
   categories: string[];
-  limitProducts: number; // 3 for Home page (forces 1 single row on mobile), 4 for Products page
+  limitProducts: number; 
 }
 
 export default function FeaturedLanes({ products, categories, limitProducts }: FeaturedLanesProps) {
-  // Filter out the 'All' selector if present to get clean row category tags
   const activeCategories = categories.filter(cat => cat !== 'All');
 
-  // Compile matching lane items
   const lanesToRender = activeCategories.map(catName => {
     const matchingItems = products.filter(
       p => p.category && p.category.toLowerCase() === catName.toLowerCase()
@@ -28,7 +26,8 @@ export default function FeaturedLanes({ products, categories, limitProducts }: F
     
     return {
       categoryName: catName,
-      products: matchingItems.slice(0, limitProducts) 
+      // Pull up to 5 items to fill rows perfectly if viewed on huge monitors
+      products: matchingItems.slice(0, Math.max(5, limitProducts)) 
     };
   }).filter(lane => lane.products.length > 0);
 
@@ -66,12 +65,15 @@ export default function FeaturedLanes({ products, categories, limitProducts }: F
           </div>
 
           {/* RESPONSIVE ROW GRID CORES */}
-          <div className="grid grid-cols-3 md:grid-cols-4 gap-1.5 sm:gap-6 w-full">
+          <div className="grid grid-cols-3 sm:grid-cols-4 min-[2000px]:grid-cols-5 gap-1.5 sm:gap-6 w-full">
             {lane.products.map((item, index) => (
               <div 
                 key={item.id} 
-                // If limitProducts is 4, we hide the 4th item on mobile viewports to preserve clean spacing layouts
-                className={limitProducts === 4 && index === 3 ? "hidden md:block min-w-0" : "block min-w-0"}
+                // Dynamically handles card entry visibility without vertical shifting:
+                className={`min-w-0 overflow-hidden ${
+                  index === 3 ? "hidden sm:block" : 
+                  index === 4 ? "hidden min-[2000px]:block" : "block"
+                }`}
               >
                 <ProductCard
                   id={item.id}

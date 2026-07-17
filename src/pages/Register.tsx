@@ -19,40 +19,69 @@ export default function Register() {
     setErrorMsg(null);
     setSuccessMsg(null);
 
+    const targetEmail = email.trim().toLowerCase();
+
     try {
-      // 🌟 Direct integration with your newly created custom public.users database table
-      const { data, error } = await supabase
-        .from('users')
-        .insert([
-          {
-            name: fullName.trim(),
-            email: email.trim().toLowerCase(),
-            password: password // In development. Hash this using bcryptjs in production workflows!
-          }
-        ])
-        .select();
+      // -------------------------------------------------------------
+      // STEP 1: Securely sign up the user in Supabase Authentication
+      // -------------------------------------------------------------
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: targetEmail,
+        password: password,
+        options: {
+          data: {
+            display_name: fullName.trim(), // Synchronizes metadata across components (Navbar)
+          },
+        },
+      });
 
-      if (error) {
-        // Handle common unique index validation constraints (e.g., email already registered)
-        if (error.code === '23505') {
-          throw new Error('This email address is already registered inside our database ledger.');
+      if (authError) {
+        if (authError.message.toLowerCase().includes('already registered')) {
+          throw new Error('This email address is already registered inside our core system.');
         }
-        throw error;
+        throw authError;
       }
 
-      if (data) {
-        setSuccessMsg('Account created successfully! Your profile signature has been registered. Redirecting to home...');
-        
-        // Clear form values out of temporary hook memory safely
-        setFullName('');
-        setEmail('');
-        setPassword('');
+      // -------------------------------------------------------------
+      // STEP 2: Simultaneously log tracking metrics into your custom Table Editor
+      // -------------------------------------------------------------
+      if (authData?.user) {
+        const { error: dbError } = await supabase
+          .from('users') // Targets your custom database ledger table
+          .insert([
+            {
+              id: authData.user.id,                  // Secure uuid mapped from Authentication layer
+              created_at: new Date().toISOString(),   // timestamptz string
+              name: fullName.trim(),                 // text input
+              email: targetEmail,                    // text entry
+              password: password                     // text format ledger log
+            }
+          ]);
 
-        // 🌟 Auto-routing straight to the home catalog storefront index
-        setTimeout(() => {
-          navigate('/');
-        }, 2000);
+        if (dbError) {
+          // Keep database index constraints clean and legible for debugging
+          if (dbError.code === '23505') {
+            throw new Error('This email address is already registered inside our database ledger.');
+          }
+          throw dbError;
+        }
       }
+
+      // -------------------------------------------------------------
+      // STEP 3: Handle Success & Redirection state routines
+      // -------------------------------------------------------------
+      setSuccessMsg('Account created successfully! Your profile signature has been registered. Redirecting to home...');
+      
+      // Clear form inputs out of memory safely
+      setFullName('');
+      setEmail('');
+      setPassword('');
+
+      // Auto-routing shift back to primary marketplace view
+      setTimeout(() => {
+        navigate('/');
+      }, 2000);
+
     } catch (err: any) {
       console.error(err);
       setErrorMsg(err?.message || 'Registration pipeline execution failure. Please try again.');

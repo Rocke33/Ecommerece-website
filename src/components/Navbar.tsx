@@ -1,169 +1,223 @@
 import { useEffect, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom'; 
+import { Link, useLocation, useNavigate } from 'react-router-dom'; 
 import { supabase } from '../supabaseClient';
 
 export default function Navbar() {
   const [cartCount, setCartCount] = useState<number>(0);
   const [user, setUser] = useState<any>(null);
+  const [userName, setUserName] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
+  
+  // State to trigger the jumping animation on the cart icon
+  const [shouldAnimateCart, setShouldAnimateCart] = useState<boolean>(false);
+
   const location = useLocation();
+  const navigate = useNavigate();
+
+  // Helper function to fetch cart items directly
+  const fetchCartCount = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('cart_items')
+        .select('quantity')
+        .eq('user_id', userId);
+
+      if (!error && data) {
+        const totalItems = data.reduce((sum, item) => sum + item.quantity, 0);
+        setCartCount(totalItems);
+      }
+    } catch (err) {
+      console.error("Error fetching cart count:", err);
+    }
+  };
 
   useEffect(() => {
-    const getSessionAndCount = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
+    const fetchSessionAndCount = async (incomingUser?: any) => {
+      let currentUser = incomingUser ?? null;
 
-      if (user) {
-        const { data, error } = await supabase
-          .from('cart_items')
-          .select('quantity')
-          .eq('user_id', user.id);
+      if (!currentUser) {
+        const { data: { session } } = await supabase.auth.getSession();
+        currentUser = session?.user || null;
+      }
 
-        if (!error && data) {
-          const totalItems = data.reduce((sum, item) => sum + item.quantity, 0);
-          setCartCount(totalItems);
-        }
+      setUser(currentUser);
+      setUserName(currentUser?.user_metadata?.display_name || null);
+
+      if (currentUser) {
+        await fetchCartCount(currentUser.id);
       } else {
         setCartCount(0);
       }
     };
 
-    getSessionAndCount();
+    fetchSessionAndCount();
 
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      const u = session?.user || null;
+      setUser(u);
+      setUserName(u?.user_metadata?.display_name || null);
+
+      if (u) {
+        fetchCartCount(u.id);
+      } else {
+        setCartCount(0);
+      }
+    });
+
+    // INSTANT POSTGRES CHANGES LISTENER
+    // 'payload' removed from callback arguments since it's not directly read
     const cartSubscription = supabase
       .channel('realtime-navbar-cart')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'cart_items' }, () => {
-        getSessionAndCount();
-      })
+      .on(
+        'postgres_changes', 
+        { event: '*', schema: 'public', table: 'cart_items' }, 
+        async () => {
+          // Identify active user session to update counts
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user) {
+            // Instantly pull the fresh quantities to render
+            await fetchCartCount(session.user.id);
+          }
+        }
+      )
       .subscribe();
 
     return () => {
+      subscription.unsubscribe();
       supabase.removeChannel(cartSubscription);
     };
   }, []);
 
+  // Monitor cart changes to trigger jumping animation instantly
+  useEffect(() => {
+    if (cartCount > 0) {
+      setShouldAnimateCart(true);
+      
+      // Stop the jump animation after 1 second (clean styling flow)
+      const timer = setTimeout(() => {
+        setShouldAnimateCart(false);
+      }, 1000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [cartCount]);
+
   const isActive = (path: string) => location.pathname === path;
+  const displayName = userName || (user && (user.user_metadata?.display_name || user.email?.split('@')[0])) || null;
 
   return (
-    <nav className="w-full border-b border-gray-100 bg-white/80 backdrop-blur-xl sticky top-0 font-sans z-50 transition-all duration-300">
+    <nav className="w-full bg-white sticky top-0 font-sans z-50">
       {/* MAIN CONTAINER */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
         
-        {/* LOGO */}
-        <Link to="/" className="text-xl font-extrabold text-gray-900 tracking-tight hover:opacity-90 transition active:scale-98 flex items-center gap-1.5">
-          <span>Gadget</span>
-          <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Horizon</span>
-          <span className="text-sm">🌐</span>
-        </Link>
+       <Link to="/" className="group text-xl sm:text-5xl font-black text-gray-900 tracking-tight transition shrink-0 flex items-center gap-1.5 sm:gap-3 bg-yellow-200 hover:bg-yellow-300 border-2 border-yellow-600/40 p-2 sm:p-3.5 rounded-xl sm:rounded-2xl shadow-md">
+  <span className="pl-1">Rocke</span>
+  
+  {/* 🔵 Deep blue gradient to pop against the solid true yellow background */}
+  <span className="bg-gradient-to-r from-blue-800 to-indigo-900 bg-clip-text text-transparent">Dev</span>
+  
+  {/* 🌐 Globe Icon Box adjusted for True Dark Yellow background */}
+  <span className="text-sm sm:text-4xl p-1 sm:p-2 rounded-lg sm:rounded-xl bg-gray-900/10 border border-yellow-700/30 inline-flex items-center justify-center transition-all duration-300 group-hover:scale-110 shadow-inner">
+    🌐
+  </span>
+</Link>
 
-        {/* 💻 DESKTOP NAV LINKS */}
-        <div className="hidden md:flex items-center gap-1">
+        {/* 💻 DESKTOP NAV LINKS - RE-STYLED WITH ECO LIGHT GREEN THEME */}
+        <div className="hidden md:flex items-center gap-2">
           {[
             { name: 'Home', path: '/' },
             { name: 'Products', path: '/products' },
-            { name: 'Orders', path: '/orders' },
+            { name: 'Top Sales', path: '/orders' },
             { name: 'Profile', path: '/profile' }
           ].map((navItem) => (
             <Link 
               key={navItem.path}
               to={navItem.path} 
-              className={`text-xs font-semibold uppercase tracking-wider px-4 py-2 rounded-xl transition-all duration-200 relative group ${
+              className={`text-xs font-black uppercase tracking-wider px-4 py-2.5 rounded-xl transition-all duration-200 border shadow-2xs ${
                 isActive(navItem.path) 
-                  ? 'text-blue-600 bg-blue-50/60' 
-                  : 'text-gray-600 hover:text-gray-950 hover:bg-gray-50'
+                  ? 'text-emerald-800 bg-emerald-100/90 border-emerald-300 shadow-xs' 
+                  : 'text-gray-800 bg-emerald-50/50 border-emerald-100 hover:text-emerald-700 hover:bg-emerald-100/50 hover:border-emerald-250'
               }`}
             >
               {navItem.name}
-              {/* Subtle active line transition indicator */}
-              <span className={`absolute bottom-0 left-4 right-4 h-0.5 bg-blue-600 rounded-full scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-center ${
-                isActive(navItem.path) ? 'scale-x-100' : ''
-              }`} />
             </Link>
           ))}
 
-          <span className="h-4 w-px bg-gray-200 mx-2" />
+          <span className="h-5 w-px bg-gray-200 mx-1" />
 
+          {/* ADMIN CONTROL */}
           <Link 
             to="/admin" 
-            className={`text-xs font-bold uppercase tracking-wider transition-all duration-200 hover:text-amber-700 bg-amber-50 text-amber-600 px-3.5 py-2 rounded-xl border border-amber-100/70 hover:border-amber-200/80 ${
-              isActive('/admin') ? 'ring-2 ring-amber-500/20 bg-amber-100/40' : ''
+            className={`text-xs font-black uppercase tracking-wider transition-all duration-200 bg-amber-50 text-amber-700 px-3.5 py-2.5 rounded-xl border border-amber-200 hover:bg-amber-100/60 ${
+              isActive('/admin') ? 'ring-2 ring-amber-500/20 bg-amber-100' : ''
             }`}
           >
             Admin Control ⚙️
           </Link>
         </div>
 
-        {/* RIGHT SIDE ACTION CONTROLS */}
-        <div className="flex items-center gap-3">
+        {/* RIGHT SIDE ACTIONS */}
+        <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
           
-          {/* DESKTOP AUTH CONTROLS */}
-          <div className="hidden md:flex items-center gap-3">
-            {!user ? (
-              <>
-                <Link to="/login" className="text-xs font-bold uppercase tracking-wide text-gray-600 hover:text-gray-900 transition px-3 py-2 rounded-lg">
-                  Sign In
-                </Link>
-                <Link to="/register" className="text-xs font-bold uppercase tracking-wide bg-blue-600 text-white px-4 py-2.5 rounded-xl shadow-xs hover:bg-blue-700 hover:shadow-md active:scale-98 transition-all duration-200">
-                  Register
-                </Link>
-              </>
-            ) : (
-              <div className="flex items-center gap-3 bg-gray-50/80 border border-gray-100 rounded-2xl pl-3 pr-2 py-1.5 max-w-[200px]">
-                <div className="flex flex-col items-end min-w-0">
-                  <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none mb-0.5">Active</span>
-                  <span className="text-[11px] text-gray-700 font-semibold truncate w-full text-right" title={user.email}>
-                    {user.email}
-                  </span>
-                </div>
-                <div className="w-7 h-7 rounded-lg bg-blue-600 text-white font-bold flex items-center justify-center text-xs uppercase shadow-2xs shrink-0 select-none">
-                  {user.email?.charAt(0) || 'U'}
-                </div>
-              </div>
-            )}
-          </div>
+          {/* USER CONTEXT */}
+          {!user ? (
+            <>
+              <Link 
+                to="/login" 
+                className="hidden md:inline-block text-xs font-black uppercase tracking-wide text-gray-900 bg-white border border-gray-200 hover:bg-gray-50 hover:border-gray-300 px-4 py-2.5 rounded-xl shadow-2xs transition"
+              >
+                Sign In
+              </Link>
+              <Link 
+                to="/register" 
+                className="text-[11px] sm:text-xs font-black uppercase tracking-wide bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-3 sm:px-4 py-2.5 rounded-xl shadow-xs hover:from-blue-700 hover:to-indigo-700 active:scale-95 transition-all"
+              >
+                Register
+              </Link>
+            </>
+          ) : (
+            <button 
+              onClick={() => navigate('/profile')}
+              type="button"
+              className="flex items-center justify-center bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white border border-indigo-700 text-[11px] sm:text-xs font-black rounded-xl px-3 sm:px-4 py-2.5 max-w-[110px] sm:max-w-[160px] truncate shadow-sm active:scale-95 transition-all cursor-pointer"
+            >
+              <span className="truncate">{displayName || user.email?.split('@')[0]}</span>
+            </button>
+          )}
 
-          {/* 🛒 PREMIUM CART BUTTON */}
+          {/* 🛒 PREMIUM CART BUTTON - INSTANT JUMPING/BOUNCING ANIMATION */}
           <Link 
             to="/cart" 
-            className={`relative flex items-center justify-center p-3 rounded-xl transition-all duration-300 group cursor-pointer border ${
+            className={`relative flex items-center justify-center p-2.5 sm:p-3 rounded-xl transition-all duration-300 border shadow-2xs ${
+              shouldAnimateCart ? 'animate-bounce' : ''
+            } ${
               isActive('/cart')
-                ? 'bg-emerald-900 border-emerald-950 text-white shadow-xs'
-                : 'bg-emerald-800 border-emerald-900 text-white hover:bg-emerald-700 hover:-translate-y-0.5 shadow-xs hover:shadow-md hover:shadow-emerald-800/10 active:scale-95'
+                ? 'bg-emerald-900 border-emerald-950 text-white'
+                : 'bg-emerald-800 border-emerald-900 text-white hover:bg-emerald-700 active:scale-95'
             }`}
-            title="View your shopping cart"
           >
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              fill="none" 
-              viewBox="0 0 24 24" 
-              strokeWidth={2.2} 
-              stroke="currentColor" 
-              className="w-5 h-5 transition-transform duration-300 ease-out group-hover:scale-105 group-hover:-rotate-2"
-            >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.2} stroke="currentColor" className="w-4.5 h-4.5 sm:w-5 sm:h-5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
             </svg>
-            
-            {/* 🔴 FLOATING COUNTER BADGE */}
             {cartCount > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-gradient-to-br from-rose-500 to-red-600 px-1 text-[10px] font-black text-white ring-2 ring-white shadow-sm shadow-red-500/20 animate-none">
+              <span className="absolute -top-1.5 -right-1.5 flex h-4.5 min-w-[18px] sm:h-5 sm:min-w-[20px] items-center justify-center rounded-full bg-red-600 px-1 text-[9px] sm:text-[10px] font-black text-white ring-2 ring-white scale-110 transition-all duration-150">
                 {cartCount}
               </span>
             )}
           </Link>
 
-          {/* 🍔 MOBILE MENU ICON TRIGGER */}
+          {/* 🍔 LARGER, DARK MENU ICON BUTTON TRIGGER */}
           <button 
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className={`md:hidden p-2.5 rounded-xl transition duration-200 cursor-pointer ${
-              isMobileMenuOpen ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
-            }`}
+            type="button"
+            className="md:hidden p-3 rounded-xl bg-slate-950 text-white hover:bg-slate-900 shadow-md transition active:scale-95 ml-0.5 cursor-pointer flex items-center justify-center shrink-0"
           >
             {isMobileMenuOpen ? (
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.4} stroke="currentColor" className="w-5 h-5">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.8} stroke="currentColor" className="w-5 h-5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.4} stroke="currentColor" className="w-5 h-5">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.8} stroke="currentColor" className="w-5 h-5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
               </svg>
             )}
@@ -173,11 +227,11 @@ export default function Navbar() {
 
       {/* 📱 MOBILE DROPDOWN FRAME */}
       {isMobileMenuOpen && (
-        <div className="md:hidden border-t border-gray-100 bg-white px-4 py-4 absolute top-full left-0 w-full shadow-xl flex flex-col gap-1 animate-in fade-in slide-in-from-top-4 duration-200 ease-out">
+        <div className="md:hidden border-t border-gray-100 bg-white px-4 py-4 absolute top-full left-0 w-full shadow-xl flex flex-col gap-1 z-50 animate-in fade-in slide-in-from-top-4 duration-200">
           {[
             { name: 'Home', path: '/' },
             { name: 'Products', path: '/products' },
-            { name: 'Orders', path: '/orders' },
+            { name: 'Top Sales', path: '/orders' },
             { name: 'Profile', path: '/profile' }
           ].map((navItem) => (
             <Link 
@@ -186,8 +240,8 @@ export default function Navbar() {
               to={navItem.path} 
               className={`text-sm font-bold px-4 py-3 rounded-xl transition ${
                 isActive(navItem.path) 
-                  ? 'text-blue-600 bg-blue-50/60' 
-                  : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+                  ? 'text-emerald-800 bg-emerald-50' 
+                  : 'text-gray-700 hover:text-emerald-700 hover:bg-emerald-50/50'
               }`}
             >
               {navItem.name}
@@ -203,31 +257,6 @@ export default function Navbar() {
           >
             Admin Control ⚙️
           </Link>
-          
-          <hr className="border-gray-100 my-2 mx-2" />
-
-          {!user ? (
-            <div className="flex flex-col gap-2 p-1">
-              <Link onClick={() => setIsMobileMenuOpen(false)} to="/login" className="text-xs font-bold text-center text-gray-700 py-3 border border-gray-200 rounded-xl bg-gray-50 hover:bg-gray-100 transition uppercase tracking-wide">
-                Sign In
-              </Link>
-              <Link onClick={() => setIsMobileMenuOpen(false)} to="/register" className="text-xs font-black text-center bg-blue-600 text-white py-3.5 rounded-xl shadow-md hover:bg-blue-700 transition uppercase tracking-wide">
-                Register Account
-              </Link>
-            </div>
-          ) : (
-            <div className="flex items-center gap-3 bg-gray-50 border border-gray-100 rounded-xl p-3 mx-1 min-w-0">
-              <div className="w-8 h-8 rounded-lg bg-blue-600 text-white font-bold flex items-center justify-center text-xs uppercase shrink-0">
-                {user.email?.charAt(0) || 'U'}
-              </div>
-              <div className="flex flex-col min-w-0">
-                <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-0.5">Signed In As</span>
-                <span className="text-xs text-gray-700 font-bold truncate" title={user.email}>
-                  {user.email}
-                </span>
-              </div>
-            </div>
-          )}
         </div>
       )}
     </nav>

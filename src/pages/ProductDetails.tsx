@@ -49,7 +49,7 @@ export default function ProductDetails() {
       const { data, error } = await supabase
         .from('product_comments')
         .select('id, user_email, rating, comment, created_at')
-        .eq('product_id', id)
+        .eq('product_id', Number(id))
         .order('created_at', { ascending: false });
 
       if (!error && data) {
@@ -75,7 +75,7 @@ export default function ProductDetails() {
       const { data, error } = await supabase
         .from('products')
         .select('*')
-        .eq('id', id)
+        .eq('id', Number(id))
         .single();
       
       if (error) {
@@ -121,7 +121,6 @@ export default function ProductDetails() {
     setCartLoading(false);
   };
 
-  // Secure user feedback record transmission form processor
   const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!userText.trim()) return;
@@ -134,25 +133,40 @@ export default function ProductDetails() {
         return;
       }
 
+      // 🌟 EXTRACTION: Fetch the user's display name from metadata, fall back to username part of email if blank
+      const chosenDisplayName =
+        user.user_metadata?.display_name ||
+        user.user_metadata?.username ||
+        user.email?.split('@')[0] ||
+        'Anonymous Visitor';
+
+      const commentPayload = {
+        product_id: Number(id),
+        user_id: user.id,
+        // We pass the display name into the database field text column
+        user_email: chosenDisplayName,
+        rating: userRating,
+        comment: userText.trim(),
+      };
+
       const { error } = await supabase
         .from('product_comments')
-        .insert([
-          {
-            product_id: id,
-            user_id: user.id,
-            user_email: user.email || 'Anonymous Visitor',
-            rating: userRating,
-            comment: userText.trim(),
-          }
-        ]);
+        .insert([commentPayload]);
 
-      if (error) throw error;
+      if (error) {
+        throw new Error(`Supabase Error: ${error.message}`);
+      }
 
       setUserText('');
-      fetchCommentsAndRatings(); // Instantly update view without reloading page
+      
+      // Smooth immediate local refresh
+      setTimeout(async () => {
+        await fetchCommentsAndRatings();
+      }, 200);
+
     } catch (err: any) {
-      console.error(err);
-      alert('Failed to save review. Please check your Supabase RLS security policies context rules.');
+      console.error("Review submission crash details:", err);
+      alert(err.message || 'Failed to save review.');
     } finally {
       setSubmittingComment(false);
     }
@@ -215,70 +229,91 @@ export default function ProductDetails() {
           </div>
 
           <div className="flex flex-col justify-between min-w-0 pt-2 md:pt-0">
-            <div>
-              <span className="inline-block bg-blue-50 text-blue-600 font-extrabold text-[8px] sm:text-[10px] tracking-wider uppercase px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md mb-1.5 sm:mb-3">
-                {product.category}
-              </span>
-              
-              <h1 className="text-sm xs:text-lg sm:text-2xl md:text-3xl font-black text-gray-900 leading-tight mb-1 sm:mb-2 break-words">
-                {product.title}
-              </h1>
-
-              {/* DYNAMIC COMPUTED AVERAGE STAR RATING DISPLAY */}
-              <div className="flex items-center gap-0.5 sm:gap-1 mb-3 sm:mb-6">
-                {[...Array(5)].map((_, i) => (
-                  <span key={i} className={`text-xs sm:text-base select-none ${i < Math.round(averageRating) ? 'text-amber-400' : 'text-gray-200'}`}>★</span>
-                ))}
-                <span className="text-[9px] sm:text-xs text-gray-400 font-semibold ml-1 sm:ml-2">
-                  ({averageRating} Rating Score · {commentsList.length} reviews)
+            <div className="space-y-4 sm:space-y-6">
+              <div>
+                <span className="inline-block bg-blue-50 text-blue-600 font-extrabold text-[8px] sm:text-[10px] tracking-wider uppercase px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md mb-1.5 sm:mb-3">
+                  {product.category}
                 </span>
+                
+                <h1 className="text-sm xs:text-lg sm:text-2xl md:text-3xl font-black text-gray-900 leading-tight mb-1 sm:mb-2 break-words">
+                  {product.title}
+                </h1>
+
+                {/* DYNAMIC COMPUTED AVERAGE STAR RATING DISPLAY */}
+                <div className="flex items-center gap-0.5 sm:gap-1">
+                  {[...Array(5)].map((_, i) => (
+                    <span key={i} className={`text-xs sm:text-base select-none ${i < Math.round(averageRating) ? 'text-amber-400' : 'text-gray-200'}`}>★</span>
+                  ))}
+                  <span className="text-[9px] sm:text-xs text-gray-400 font-semibold ml-1 sm:ml-2">
+                    ({averageRating} Rating Score · {commentsList.length} reviews)
+                  </span>
+                </div>
               </div>
 
-              <div className="bg-gray-50 p-2 sm:p-4 rounded-xl border border-gray-100 mb-3 sm:mb-6">
-                <span className="text-[7px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-0.5">Retailing Value</span>
-                <span className="text-sm xs:text-xl sm:text-3xl font-black text-gray-900 font-mono">${product.price.toFixed(2)}</span>
+              {/* ACTION ROW: PRICE, CONTROLS, SUPPLY STATUS & ADD TO CART INTEGRATION */}
+              <div className="bg-gray-50 border border-gray-100 p-3 sm:p-5 rounded-2xl flex flex-col gap-4 sm:gap-5">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200/60 pb-3">
+                  <div className="flex flex-col">
+                    <span className="text-[7px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest">Retailing Value</span>
+                    <span className="text-xl sm:text-3xl font-black text-gray-900 font-mono">${product.price.toFixed(2)}</span>
+                  </div>
+                  
+                  <div className="flex flex-col items-end gap-0.5">
+                    <span className="text-[7px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest">Supply Status</span>
+                    <span className="text-[9px] sm:text-xs font-extrabold text-emerald-600 bg-emerald-100/70 border border-emerald-200 px-2.5 py-1 rounded-lg shadow-3xs">
+                      ✔ In Stock
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap sm:flex-nowrap gap-3 items-center w-full">
+                  {/* LARGE AND COLORFUL BOX SYSTEM STEPPER */}
+                  <div className="flex items-center bg-white border border-gray-200 rounded-xl overflow-hidden shadow-2xs shrink-0 h-11 sm:h-12">
+                    <button 
+                      disabled={isAddedSuccess} 
+                      onClick={() => setItemCount(Math.max(1, itemCount - 1))} 
+                      className="w-10 sm:w-12 h-full flex items-center justify-center font-black text-2xl sm:text-3xl bg-red-300 text-red-600 hover:bg-red-500 hover:text-white border-r border-gray-200 transition-all duration-150 disabled:opacity-40 cursor-pointer"
+                    >
+                      -
+                    </button>
+                    <span className="px-3 text-xs sm:text-base font-black text-gray-800 min-w-[32px] sm:min-w-[40px] text-center select-none font-mono">
+                      {itemCount}
+                    </span>
+                    <button 
+                      disabled={isAddedSuccess} 
+                      onClick={() => setItemCount(itemCount + 1)} 
+                      className="w-10 sm:w-12 h-full flex items-center justify-center font-black text-xl sm:text-2xl bg-emerald-300 text-emerald-600 hover:bg-emerald-500 hover:text-white border-l border-gray-200 transition-all duration-150 disabled:opacity-40 cursor-pointer"
+                    >
+                      +
+                    </button>
+                  </div>
+
+                  {/* DYNAMIC CART SUBMISSION BUTTON */}
+                  <div className="flex-1 flex flex-col relative min-w-0 h-11 sm:h-12">
+                    {isAddedSuccess && (
+                      <span className="absolute -top-4.5 left-0 right-0 text-center text-[8px] sm:text-[10px] font-bold text-emerald-600 whitespace-nowrap animate-pulse">Added to cart successfully!</span>
+                    )}
+                    <button 
+                      onClick={handleAddToCart}
+                      disabled={cartLoading || isAddedSuccess}
+                      className={`w-full h-full text-white font-extrabold rounded-xl shadow-xs transition-all duration-200 cursor-pointer flex items-center justify-center whitespace-nowrap truncate text-xs sm:text-sm px-4 ${
+                        isAddedSuccess ? 'bg-emerald-600 font-black cursor-default' : cartLoading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-500 active:scale-[0.98]'
+                      }`}
+                    >
+                      {isAddedSuccess ? '✓ Added to Cart' : cartLoading ? 'Syncing...' : `Add to Cart ($${(product.price * itemCount).toFixed(2)})`}
+                    </button>
+                  </div>
+                </div>
               </div>
 
-              <div className="mb-3 sm:mb-6">
-                <h3 className="text-[8px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider mb-0.5 sm:mb-2">Product Description</h3>
-                <p className="text-[10px] xs:text-xs sm:text-sm leading-relaxed text-gray-600">
+              {/* DESCRIPTION BOX (Positioned naturally beneath actions/price row layout) */}
+              <div className="border-t border-gray-100 pt-4">
+                <h3 className="text-[9px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider mb-1 sm:mb-2">Product Description</h3>
+                <p className="text-[11px] xs:text-xs sm:text-sm leading-relaxed text-gray-600 bg-white">
                   {product.description}
                 </p>
               </div>
             </div>
-
-            <div className="pt-3 sm:pt-6 border-t border-gray-100">
-              <div className="flex items-center justify-between mb-2 sm:mb-4">
-                <span className="text-[9px] sm:text-xs font-bold text-gray-500">Supply Status:</span>
-                <span className="text-[8px] sm:text-xs font-extrabold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 sm:px-2.5 sm:py-0.5 rounded-full">
-                  ✔ In Stock
-                </span>
-              </div>
-
-              <div className="flex gap-2 sm:gap-4 items-center">
-                <div className="flex items-center border border-gray-200 rounded-xl bg-gray-50 shrink-0">
-                  <button disabled={isAddedSuccess} onClick={() => setItemCount(Math.max(1, itemCount - 1))} className="px-2 py-1 sm:px-3 sm:py-2 font-bold text-xs sm:text-sm text-gray-500 hover:text-black transition disabled:opacity-40 cursor-pointer">-</button>
-                  <span className="px-0.5 text-xs sm:text-sm font-black text-gray-800 w-4 text-center select-none">{itemCount}</span>
-                  <button disabled={isAddedSuccess} onClick={() => setItemCount(itemCount + 1)} className="px-2 py-1 sm:px-3 sm:py-2 font-bold text-xs sm:text-sm text-gray-500 hover:text-black transition disabled:opacity-40 cursor-pointer">+</button>
-                </div>
-
-                <div className="flex-1 flex flex-col relative min-w-0">
-                  {isAddedSuccess && (
-                    <span className="absolute -top-4 left-0 right-0 text-center text-[8px] sm:text-[10px] font-bold text-emerald-600 whitespace-nowrap animate-pulse">Added to cart successfully!</span>
-                  )}
-                  <button 
-                    onClick={handleAddToCart}
-                    disabled={cartLoading || isAddedSuccess}
-                    className={`w-full text-white font-extrabold rounded-xl shadow-xs transition-all duration-200 cursor-pointer text-center whitespace-nowrap truncate text-[10px] py-2 px-1.5 xs:text-sm xs:py-3 xs:px-4 ${
-                      isAddedSuccess ? 'bg-emerald-600 font-black cursor-default' : cartLoading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-500 active:scale-[0.98]'
-                    }`}
-                  >
-                    {isAddedSuccess ? '✓ Added' : cartLoading ? 'Syncing...' : `Add to Cart ($${(product.price * itemCount).toFixed(2)})`}
-                  </button>
-                </div>
-              </div>
-            </div>
-
           </div>
         </div>
 
@@ -288,11 +323,9 @@ export default function ProductDetails() {
             User Feedback & Reviews
           </h2>
 
-          {/* RATING SELECTION & COMMENT ENTRY WORKFLOW SUBMISSION PANEL */}
           <form onSubmit={handleCommentSubmit} className="bg-gray-50 border border-gray-100 p-3 rounded-xl space-y-3">
             <h3 className="text-[10px] sm:text-xs font-bold text-gray-700 uppercase tracking-wider">Write a Review</h3>
             
-            {/* INTERACTIVE STAR-SELECTOR BAR */}
             <div className="flex items-center gap-2">
               <span className="text-[10px] sm:text-xs font-medium text-gray-500">Select Rating:</span>
               <div className="flex gap-1">
@@ -327,7 +360,6 @@ export default function ProductDetails() {
             </div>
           </form>
 
-          {/* CHRONOLOGICAL FEEDBACK COMMENT GRID */}
           <div className="space-y-2.5 max-h-96 overflow-y-auto pr-1">
             {loadingComments ? (
               <p className="text-center text-[10px] sm:text-xs text-gray-400 font-bold animate-pulse py-4">Syncing client reviews dashboard...</p>

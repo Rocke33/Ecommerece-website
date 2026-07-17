@@ -239,16 +239,17 @@ export default function Admin() {
         {loading ? (
           <div className="text-center py-12 text-xs text-gray-400 animate-pulse">Loading catalog matrix...</div>
         ) : activeTab === 'orders' ? (
-          <div className="bg-white border border-gray-200 rounded-2xl overflow-x-auto shadow-sm">
-            <table className="w-full text-left min-w-[1050px]">
+          /* 🌟 SCROLL WRAPPER FEATURE: Safe horizontal scroll layout exclusively for mobile screen views */
+          <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-x-auto selection:bg-blue-100">
+            <table className="w-full text-left min-w-[1000px]">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-100 text-xs font-bold text-gray-500 uppercase tracking-wider">
-                  <th className="p-4">Ref & Time</th>
-                  <th className="p-4">Contact Phone</th>
-                  <th className="p-4">Detailed Destination</th>
-                  <th className="p-4">Products Breakdown</th>
-                  <th className="p-4">Payment Audit</th>
-                  <th className="p-4 text-center">Fulfillment Actions</th>
+                  <th className="p-4 w-[12%]">Ref & Time</th>
+                  <th className="p-4 w-[14%]">Contact Phone</th>
+                  <th className="p-4 w-[24%]">Detailed Destination</th>
+                  <th className="p-4 w-[22%]">Products Breakdown</th>
+                  <th className="p-4 w-[14%]">Payment Audit</th>
+                  <th className="p-4 w-[14%] text-center">Fulfillment Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 text-sm bg-white">
@@ -271,52 +272,55 @@ export default function Admin() {
                       {order.contact_number || 'N/A'}
                     </td>
 
-                    <td className="p-4 max-w-xs">
+                    <td className="p-4">
                       {order.shipping_destination?.type === 'University' ? (
                         <div className="text-gray-800 font-medium">
                           🎓 <span className="font-bold">{order.shipping_destination.universityName}</span>
                           <span className="block text-xs text-gray-500 mt-0.5">{order.shipping_destination.hallName}</span>
                         </div>
                       ) : (
-                        <div className="text-gray-800 font-medium truncate">
+                        <div className="text-gray-800 font-medium max-w-[220px] break-words">
                           🏠 {order.shipping_destination?.villageArea || order.shipping_address}
                         </div>
                       )}
                     </td>
 
-                    <td className="p-4 text-xs text-gray-600 font-medium space-y-0.5">
-                      {order.order_items.map((item, i) => (
-                        <div key={i} className="truncate max-w-sm">
-                          • {item.products?.title || 'Unknown Item'} <span className="text-gray-400 font-bold">x{item.quantity}</span>
-                        </div>
-                      ))}
+                    <td className="p-4 text-xs text-gray-600 font-medium">
+                      <div className="max-w-[200px] space-y-0.5">
+                        {order.order_items.map((item, i) => (
+                          <div key={i} className="truncate" title={item.products?.title || 'Unknown Item'}>
+                            • {item.products?.title || 'Unknown Item'} <span className="text-gray-400 font-bold">x{item.quantity}</span>
+                          </div>
+                        ))}
+                      </div>
                     </td>
 
                     <td className="p-4 whitespace-nowrap">
                       <div className="font-black text-gray-900">${order.total_amount.toFixed(2)}</div>
                       <div className="mt-1 flex flex-col gap-0.5">
                         <span className="inline-block bg-gray-100 text-gray-600 border border-gray-200 text-[9px] uppercase font-black px-1.5 py-0.5 rounded tracking-wide w-fit">
-                          💳 {order.payment_details?.method || 'Cash on Delivery'}
+                          💳 {order.payment_details?.method || 'COD'}
                         </span>
                         {order.payment_details?.trx_id && (
-                          <span className="text-[10px] font-mono text-gray-400 font-semibold block">
+                          <span className="text-[10px] font-mono text-gray-400 font-semibold block truncate max-w-[120px]" title={order.payment_details.trx_id}>
                             TxID: {order.payment_details.trx_id}
                           </span>
                         )}
                       </div>
                     </td>
 
-                    <td className="p-4 text-center whitespace-nowrap">
-                      <div className="flex items-center justify-center gap-3">
+                    {/* 🛠️ ACTION BUTTONS ARE SAFE: Clean, side-by-side row button alignment inside standard row spacing */}
+                    <td className="p-4 whitespace-nowrap text-center">
+                      <div className="flex items-center justify-center gap-2">
                         <button 
                           onClick={() => handleUpdateStatus(order.id, order.status)} 
-                          className={`min-w-[110px] px-3 py-1.5 text-xs font-black rounded-xl border transition active:scale-95 cursor-pointer shadow-sm ${
+                          className={`min-w-[100px] px-2.5 py-1.5 text-xs font-black rounded-xl border transition active:scale-95 cursor-pointer shadow-sm ${
                             order.status === 'Delivered' 
                               ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100/70' 
                               : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100/70'
                           }`}
                         >
-                          {order.status === 'Delivered' ? '🟢 Delivered ✓' : '🟡 Pending'}
+                          {order.status === 'Delivered' ? '🟢 Delivered' : '🟡 Pending'}
                         </button>
                         
                         <button
@@ -324,7 +328,7 @@ export default function Admin() {
                           className="p-1.5 bg-red-50 hover:bg-red-100 border border-red-100 rounded-xl text-red-500 hover:text-red-700 text-xs font-bold transition active:scale-95 cursor-pointer shadow-sm"
                           title="Purge Order Row"
                         >
-                          🗑️ Remove
+                          🗑️
                         </button>
                       </div>
                     </td>
