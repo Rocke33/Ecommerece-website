@@ -182,7 +182,7 @@ export default function CheckoutForm({ cartItems, subtotal, onOrderSuccess }: Ch
                 <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">University Name *</label>
                 <input
                   type="text" required={addressType === 'University'} value={universityName}
-                  onChange={(e) => setUniversityName(e.target.value)} placeholder="e.g., Dhaka University / RUET"
+                  onChange={(e) => setUniversityName(e.target.value)} placeholder="e.g., Jahangirnagar University / RUET"
                   className="w-full text-xs border border-gray-200 bg-white p-2.5 rounded-xl focus:outline-blue-500 font-medium"
                 />
               </div>
@@ -190,7 +190,7 @@ export default function CheckoutForm({ cartItems, subtotal, onOrderSuccess }: Ch
                 <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Residential Hall Name *</label>
                 <input
                   type="text" required={addressType === 'University'} value={hallName}
-                  onChange={(e) => setHallName(e.target.value)} placeholder="e.g., Shahidullah Hall, Room 302"
+                  onChange={(e) => setHallName(e.target.value)} placeholder="e.g., Bangabandhu Sheikh Muzibur Rahman Hall, Room 410"
                   className="w-full text-xs border border-gray-200 bg-white p-2.5 rounded-xl focus:outline-blue-500 font-medium"
                 />
               </div>
