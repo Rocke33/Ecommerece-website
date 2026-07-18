@@ -48,7 +48,7 @@ export default function FeaturedLanes({ products, categories, limitProducts }: F
           <div className="flex items-center justify-between border-b border-gray-100 pb-2 gap-2 px-1">
             <div className="flex items-center gap-1.5 min-w-0">
               <h3 className="text-sm sm:text-lg font-black text-gray-900 tracking-tight uppercase truncate">
-                {lane.categoryName} Selection
+                {lane.categoryName} 
               </h3>
               <span className="text-[8px] sm:text-[10px] font-black bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-md uppercase tracking-wider whitespace-nowrap shrink-0">
                 Top Picks

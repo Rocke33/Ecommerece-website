@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom'; // 🛠️ Added for smooth redirection
 import { supabase } from '../supabaseClient';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -22,8 +23,9 @@ interface UserOrder {
 }
 
 export default function Profile() {
+  const navigate = useNavigate(); // 🛠️ Navigation hook initialized
   const [orders, setOrders] = useState<UserOrder[]>([]);
-  const [userEmail, setUserEmail] = useState<string | null>('');
+  const [userEmail, setUserEmail] = useState<string | null>(null); // 🛠️ Default to null so we can check auth state
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
@@ -51,12 +53,14 @@ export default function Profile() {
               products ( title, image_url )
             )
           `)
-          .eq('user_id', user.id) // 💡 Security filter: Only pull my own items!
+          .eq('user_id', user.id) // 庁 Security filter: Only pull my own items!
           .order('created_at', { ascending: false });
 
         if (!error && data) {
           setOrders(data as unknown as UserOrder[]);
         }
+      } else {
+        setUserEmail(null); // Explicitly ensure it's null if unauthenticated
       }
       setLoading(false);
     };
@@ -79,19 +83,30 @@ export default function Profile() {
         <div className="bg-white border border-gray-200 p-6 rounded-2xl shadow-sm mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-black text-lg">
-              👤
+              側
             </div>
             <div>
               <h2 className="text-base font-black text-gray-900 leading-tight">Customer Account</h2>
-              <p className="text-xs text-gray-500 mt-0.5">{userEmail}</p>
+              <p className="text-xs text-gray-500 mt-0.5">{userEmail || 'Not Signed In'}</p>
             </div>
           </div>
-          <button
-            onClick={handleLogout}
-            className="text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 px-4 py-2 rounded-xl transition cursor-pointer self-start sm:self-center"
-          >
-            Sign Out Account
-          </button>
+
+          {/* 🛠️ Dynamic Auth Button: Swaps based on whether userEmail is present */}
+          {userEmail ? (
+            <button
+              onClick={handleLogout}
+              className="text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 px-4 py-2 rounded-xl transition cursor-pointer self-start sm:self-center"
+            >
+              Sign Out Account
+            </button>
+          ) : (
+            <button
+              onClick={() => navigate('/login')}
+              className="text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 px-4 py-2 rounded-xl transition cursor-pointer self-start sm:self-center"
+            >
+              Sign In
+            </button>
+          )}
         </div>
 
         {/* Order History Section */}
@@ -99,6 +114,11 @@ export default function Profile() {
 
         {loading ? (
           <div className="text-center py-12 text-sm text-gray-400 font-medium">Loading your cloud order files...</div>
+        ) : !userEmail ? (
+          /* 🛠️ Safe view state if unauthenticated user arrives here */
+          <div className="text-center py-16 bg-white border border-gray-200 rounded-2xl text-sm text-gray-400">
+            Please log in to view your order dispatch history records.
+          </div>
         ) : orders.length === 0 ? (
           <div className="text-center py-16 bg-white border border-gray-200 rounded-2xl text-sm text-gray-400">
             You haven't placed any orders yet. Go add items to your cart!
@@ -129,7 +149,7 @@ export default function Profile() {
                         ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
                         : 'bg-amber-50 text-amber-700 border-amber-200'
                     }`}>
-                      {order.status === 'Shipped' ? '🟢 Shipped' : '🟡 Pending Delivery'}
+                      {order.status === 'Shipped' ? '泙 Shipped' : '泯 Pending Delivery'}
                     </span>
                   </div>
                 </div>
@@ -156,7 +176,7 @@ export default function Profile() {
 
                 {/* Shipping destination disclosure */}
                 <div className="bg-gray-50/50 border-t border-gray-150 px-4 py-2.5 text-[11px] text-gray-500 font-medium">
-                  📍 Dispatched To: <span className="text-gray-700 font-bold">{order.shipping_address}</span>
+                  桃 Dispatched To: <span className="text-gray-700 font-bold">{order.shipping_address}</span>
                 </div>
               </div>
             ))}

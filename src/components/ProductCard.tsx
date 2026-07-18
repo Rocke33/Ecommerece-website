@@ -11,7 +11,7 @@ interface ProductCardProps {
   description: string;
 }
 
-export default function ProductCard({ id, title, price, image_url, category, description }: ProductCardProps) {
+export default function ProductCard({ id, title, price, image_url }: ProductCardProps) {
   const navigate = useNavigate(); 
   
   // 🛒 Cart States
@@ -97,9 +97,7 @@ export default function ProductCard({ id, title, price, image_url, category, des
       <div>
         {/* IMAGE INTERFACE PAN */}
         <div className="w-full h-20 xs:h-28 sm:h-44 bg-gray-50 rounded-lg overflow-hidden flex items-center justify-center p-1 sm:p-2 mb-1.5 sm:mb-4 relative shrink-0">
-          <span className="absolute top-1 left-1 bg-gray-950/5 text-gray-600 text-[7px] sm:text-[10px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wider backdrop-blur-xs">
-            {category}
-          </span>
+          {/* CATEGORY REMOVED FROM HERE */}
           <img 
             src={image_url} 
             alt={title} 
@@ -109,13 +107,11 @@ export default function ProductCard({ id, title, price, image_url, category, des
 
         {/* DETAILS TELEMETRY SECTION */}
         <div className="flex-1 flex flex-col min-w-0">
-          <h3 className="text-[10px] xs:text-xs sm:text-sm font-bold text-gray-800 line-clamp-2 min-h-[28px] xs:min-h-[32px] sm:min-h-[40px] leading-tight mb-0.5 sm:mb-1 group-hover:text-blue-600 transition truncate-2-lines">
+          <h3 className="text-[10px] xs:text-xs sm:text-sm font-bold text-gray-800 line-clamp-2 min-h-[28px] xs:min-h-[32px] sm:min-h-[40px] leading-tight mb-1.5 sm:mb-2 group-hover:text-blue-600 transition truncate-2-lines">
             {title}
           </h3>
           
-          <p className="text-[9px] xs:text-[10px] sm:text-xs text-gray-400 line-clamp-1 mb-1.5 sm:mb-2">
-            {description}
-          </p>
+          {/* DESCRIPTION REMOVED FROM HERE */}
 
           {/* DYNAMIC AVERAGE RATING ACCORDING TO ALL UNIQUE USERS */}
           <div className="flex items-center gap-0.5 sm:gap-1 mb-2">
@@ -131,14 +127,15 @@ export default function ProductCard({ id, title, price, image_url, category, des
 
       {/* BOTTOM ACTION SPLIT ROW */}
       <div className="pt-1.5 sm:pt-2 border-t border-gray-100 flex flex-col gap-1.5 sm:gap-2" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-baseline justify-between">
+        <div className="flex items-baseline justify-between mb-1">
           <span className="text-[8px] sm:text-[10px] uppercase tracking-wider text-gray-400 font-bold leading-none">Price</span>
           <span className="text-xs xs:text-sm sm:text-lg font-black text-gray-900 font-mono">${price.toFixed(2)}</span>
         </div>
 
-        <div className="w-full relative flex gap-1 items-center">
+        {/* Action Button Wrapper: Added explicit spacing attributes to handle safety notifications inside */}
+        <div className="w-full relative pt-3 flex gap-1 items-center">
           {isAddedSuccess && (
-            <span className="absolute -top-4 left-0 right-0 text-center text-[7px] xs:text-[9px] font-bold text-emerald-600 whitespace-nowrap animate-pulse z-20">
+            <span className="absolute top-[-8px] left-0 right-0 text-center text-[8px] xs:text-[9px] font-black text-emerald-600 whitespace-nowrap animate-pulse z-20 bg-white/90 backdrop-blur-xs py-0.5">
               Added successfully!
             </span>
           )}
@@ -156,7 +153,7 @@ export default function ProductCard({ id, title, price, image_url, category, des
             {isAddedSuccess ? '✓ Added' : 'Add to Cart'}
           </button>
 
-          {/* 🧭 PREMIUM HIGH-VISIBILITY DARK ROUTING DETAILS BUTTON */}
+          {/* 🧭 NAVIGATION DETAILS BUTTON */}
           <button 
             onClick={handleCardRedirection}
             className="bg-gray-950 hover:bg-gray-800 text-white font-extrabold rounded-lg px-2 py-1.5 xs:px-2.5 xs:py-2 sm:px-4 sm:py-2.5 text-[8px] xs:text-[10px] sm:text-xs transition active:scale-95 shadow-2xs whitespace-nowrap cursor-pointer z-10"

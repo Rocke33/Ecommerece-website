@@ -110,17 +110,15 @@ export default function Navbar() {
       {/* MAIN CONTAINER */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
         
-       <Link to="/" className="group text-xl sm:text-5xl font-black text-gray-900 tracking-tight transition shrink-0 flex items-center gap-1.5 sm:gap-3 bg-yellow-200 hover:bg-yellow-300 border-2 border-yellow-600/40 p-2 sm:p-3.5 rounded-xl sm:rounded-2xl shadow-md">
-  <span className="pl-1">Rocke</span>
-  
-  {/* 🔵 Deep blue gradient to pop against the solid true yellow background */}
-  <span className="bg-gradient-to-r from-blue-800 to-indigo-900 bg-clip-text text-transparent">Dev</span>
-  
-  {/* 🌐 Globe Icon Box adjusted for True Dark Yellow background */}
-  <span className="text-sm sm:text-4xl p-1 sm:p-2 rounded-lg sm:rounded-xl bg-gray-900/10 border border-yellow-700/30 inline-flex items-center justify-center transition-all duration-300 group-hover:scale-110 shadow-inner">
-    🌐
-  </span>
-</Link>
+     <Link to="/" className="group text-xl sm:text-2xl md:text-3xl font-black text-white tracking-tight transition duration-200 shrink-0 flex items-center gap-1.5 bg-blue-600 hover:bg-blue-800 border-2 border-blue-700/50 hover:border-blue-900 p-1.5 sm:p-2 rounded-xl shadow-md">
+    <span className="pl-1 text-white">Rocke</span>
+    <span className="text-white">Dev</span>
+    
+    {/* 🌐 Globe Icon Box adjusted with high-contrast semi-transparent white boundaries */}
+    <span className="text-sm sm:text-lg md:text-xl p-1 rounded-lg bg-white/15 border border-white/25 inline-flex items-center justify-center transition-all duration-300 group-hover:scale-110 shadow-inner">
+      🌐
+    </span>
+  </Link>
 
         {/* 💻 DESKTOP NAV LINKS - RE-STYLED WITH ECO LIGHT GREEN THEME */}
         <div className="hidden md:flex items-center gap-2">
