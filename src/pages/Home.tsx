@@ -52,6 +52,16 @@ export default function Home() {
   }, [searchQuery, selectedCategory]);
 
   useEffect(() => {
+    // If the user has typed a query, snap the view up so they see results instantly
+    if (searchQuery.trim() !== '') {
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth' // Adds a smooth scrolling animation to the top
+      });
+    }
+  }, [searchQuery]);
+
+  useEffect(() => {
     const fetchProducts = async () => {
       setLoading(true);
       try {

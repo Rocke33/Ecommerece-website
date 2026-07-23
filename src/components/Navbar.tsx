@@ -110,7 +110,7 @@ export default function Navbar() {
       {/* MAIN CONTAINER */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
         
-     <Link to="/" className="group text-xl sm:text-2xl md:text-3xl font-black text-white tracking-tight transition duration-200 shrink-0 flex items-center gap-1.5 bg-blue-600 hover:bg-blue-800 border-2 border-blue-700/50 hover:border-blue-900 p-1.5 sm:p-2 rounded-xl shadow-md">
+     <Link to="/" className="group text-xl sm:text-2xl md:text-3xl font-black text-white tracking-tight transition duration-200 shrink-0 flex items-center gap-1.5 bg-blue-800 hover:bg-blue-1000 border-2 border-blue-700/50 hover:border-blue-900 p-1.5 sm:p-2 rounded-xl shadow-md">
     <span className="pl-1 text-white">Rocke</span>
     <span className="text-white">Dev</span>
     

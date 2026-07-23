@@ -6,21 +6,23 @@ export default function Subscribe() {
   const navigate = useNavigate();
   const [isSubscribed, setIsSubscribed] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
+  const [actionLoading, setActionLoading] = useState<boolean>(false);
 
-  // 📡 Sync initial state from the database on component load
+  // 📡 Sync initial state from the brand new 'subscribers' table on component load
   useEffect(() => {
     async function checkSubscriptionStatus() {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
+          // 🚀 FIX: Query the subscribers table instead of profiles
           const { data, error } = await supabase
-            .from('profiles')
-            .select('is_subscribed')
-            .eq('id', user.id)
+            .from('subscribers')
+            .select('email')
+            .eq('email', user.email?.toLowerCase())
             .maybeSingle();
 
           if (!error && data) {
-            setIsSubscribed(!!data.is_subscribed);
+            setIsSubscribed(true);
           }
         }
       } catch (err) {
@@ -36,23 +38,35 @@ export default function Subscribe() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
-      // 🛑 If user is not signed in, push them to the sign-in section
       if (!user) {
         navigate('/login');
         return;
       }
 
-      // ⚡ INSTANT frontend visual transformation updates right away
-      setIsSubscribed(true);
+      setActionLoading(true);
 
-      // 📡 Silently update backend row metadata parameters in the background
-      await supabase
-        .from('profiles')
-        .update({ is_subscribed: true })
-        .eq('id', user.id);
+      // 🚀 FIX: Insert a row directly into your new 'subscribers' table!
+      const { error } = await supabase
+        .from('subscribers')
+        .insert([{ email: user.email?.toLowerCase() }]);
+
+      if (error) {
+        // Smooth bypass if row constraint says they are already in the table
+        if (error.code === '23505') {
+          setIsSubscribed(true);
+          return;
+        }
+        throw error;
+      }
+
+      setIsSubscribed(true);
+      console.log(`[Vercel Log] Added to subscribers table: ${user.email}`);
 
     } catch (err) {
       console.error('Failed to subscribe:', err);
+      alert('Could not update subscription settings.');
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -61,17 +75,24 @@ export default function Subscribe() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // ⚡ INSTANT frontend fallback transformation
-      setIsSubscribed(false);
+      setActionLoading(true);
 
-      // 📡 Silently update backend row metadata parameters in the background
-      await supabase
-        .from('profiles')
-        .update({ is_subscribed: false })
-        .eq('id', user.id);
+      // 🚀 FIX: Delete their row out of the 'subscribers' table when they click unsubscribe
+      const { error } = await supabase
+        .from('subscribers')
+        .delete()
+        .eq('email', user.email?.toLowerCase());
+
+      if (error) throw error;
+
+      setIsSubscribed(false);
+      console.log(`[Vercel Log] Removed from subscribers table: ${user.email}`);
 
     } catch (err) {
       console.error('Failed to unsubscribe:', err);
+      alert('Could not update subscription settings.');
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -86,7 +107,6 @@ export default function Subscribe() {
 
   return (
     <section className="my-16 bg-gradient-to-br from-blue-600 to-blue-700 rounded-3xl p-8 md:p-12 text-center text-white shadow-xl relative overflow-hidden group">
-      {/* Background Graphic Design Decorators */}
       <div className="absolute -top-12 -right-12 w-40 h-40 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
       <div className="absolute -bottom-12 -left-12 w-40 h-40 bg-blue-900/30 rounded-full blur-2xl pointer-events-none"></div>
 
@@ -105,25 +125,25 @@ export default function Subscribe() {
 
         <div className="flex flex-col items-center justify-center max-w-xs mx-auto">
           {!isSubscribed ? (
-            /* 🔵 STATE A: NOT SUBSCRIBED BUTTON LAYOUT */
             <button
+              disabled={actionLoading}
               onClick={handleSubscribeAction}
-              className="w-full bg-gray-900 hover:bg-gray-800 text-white font-extrabold text-xs uppercase tracking-widest py-3.5 px-8 rounded-xl shadow-lg transition-all duration-200 active:scale-95 cursor-pointer"
+              className="w-full bg-gray-900 hover:bg-gray-800 text-white font-extrabold text-xs uppercase tracking-widest py-3.5 px-8 rounded-xl shadow-lg transition-all duration-200 active:scale-95 cursor-pointer disabled:opacity-50"
             >
-              Subscribe Now
+              {actionLoading ? 'Processing...' : 'Subscribe Now'}
             </button>
           ) : (
-            /* 🟢 STATE B: SUBSCRIBED + INLINE UNSUBSCRIBE CONTROL */
             <div className="w-full space-y-3">
               <div className="w-full bg-emerald-600 text-white font-extrabold text-xs uppercase tracking-widest py-3.5 px-8 rounded-xl shadow-md border border-emerald-500/30 select-none">
                 ✓ Subscribed
               </div>
               
               <button
+                disabled={actionLoading}
                 onClick={handleUnsubscribeAction}
-                className="text-[11px] font-bold text-blue-200 hover:text-white transition underline cursor-pointer"
+                className="text-[11px] font-bold text-blue-200 hover:text-white transition underline cursor-pointer disabled:opacity-40"
               >
-                Unsubscribe from updates
+                {actionLoading ? 'Updating...' : 'Unsubscribe from updates'}
               </button>
             </div>
           )}

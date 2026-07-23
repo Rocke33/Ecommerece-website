@@ -4,27 +4,6 @@ import { supabase } from '../supabaseClient';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 
-interface OrderItem {
-  order_id: number | string; 
-  product_id: number;
-  quantity: number;
-  price_at_purchase: number;
-  products: {
-    id: number; 
-    title: string;
-    image_url: string; 
-    price: number;     
-  };
-}
-
-interface Order {
-  id: number | string; 
-  created_at: string;
-  status: 'Processing' | 'Shipped' | 'Delivered' | 'Pending';
-  total_amount: number; 
-  order_items: OrderItem[]; 
-}
-
 interface TopProductMetrics {
   id: number; 
   product_name: string;
@@ -40,30 +19,12 @@ export default function Orders() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchGlobalOrders = async () => {
+    const fetchTopSellingProducts = async () => {
       setLoading(true);
       setErrorMessage(null);
       try {
-        const { data, error } = await supabase
-          .from('orders')
-          .select(`
-            id,
-            created_at,
-            status,
-            total_amount,
-            order_items (
-              order_id,
-              product_id,
-              quantity,
-              price_at_purchase,
-              products (
-                id,
-                title,
-                image_url,
-                price
-              )
-            )
-          `);
+        // 🚀 Call our secure database function that handles aggregation safely for guests
+        const { data, error } = await supabase.rpc('get_public_top_sales');
 
         if (error) {
           console.error('Database Error:', error);
@@ -72,47 +33,15 @@ export default function Orders() {
         }
 
         if (data) {
-          const ordersData = data as unknown as Order[];
+          const formattedProducts: TopProductMetrics[] = data.map((prod: any) => ({
+            id: prod.id,
+            product_name: prod.title,
+            image_url: prod.image_url,
+            price: prod.price,
+            unitsSold: Number(prod.sales_count) || 0,
+          }));
 
-          // 📊 Aggregate metrics from global purchase database rows
-          const salesMap: Record<number, { name: string; img: string; prc: number; qty: number }> = {};
-
-          ordersData.forEach((order) => {
-            if (order.order_items) {
-              order.order_items.forEach((item) => {
-                const productObj = item.products;
-                if (productObj) {
-                  const pId = productObj.id;
-                  const count = item.quantity || 0;
-                  
-                  if (salesMap[pId]) {
-                    salesMap[pId].qty += count;
-                  } else {
-                    salesMap[pId] = {
-                      name: productObj.title,
-                      img: productObj.image_url,
-                      prc: productObj.price,
-                      qty: count
-                    };
-                  }
-                }
-              });
-            }
-          });
-
-          // 🌟 Expanded metrics array processing up to top 20 trending positions
-          const sortedTopProducts: TopProductMetrics[] = Object.entries(salesMap)
-            .map(([id, info]) => ({
-              id: Number(id),
-              product_name: info.name,
-              image_url: info.img,
-              price: info.prc,
-              unitsSold: info.qty,
-            }))
-            .sort((a, b) => b.unitsSold - a.unitsSold)
-            .slice(0, 20);
-
-          setTopProducts(sortedTopProducts);
+          setTopProducts(formattedProducts);
         }
       } catch (err: any) {
         console.error('System Failure:', err);
@@ -122,7 +51,7 @@ export default function Orders() {
       }
     };
 
-    fetchGlobalOrders();
+    fetchTopSellingProducts();
   }, []);
 
   return (

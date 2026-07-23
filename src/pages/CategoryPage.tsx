@@ -45,6 +45,8 @@ export default function CategoryPage() {
         console.error('Error loading category inventory items:', err);
       } finally {
         setLoading(false);
+        // 🚀 FORCE VIEW RESET AT LAYOUT UPDATE BOUNDARY
+        window.scrollTo(0, 0);
       }
     }
 
