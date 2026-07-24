@@ -400,7 +400,7 @@ export default function Cart() {
                     <label className="block text-[9px] font-bold text-gray-400 uppercase mb-1">University Name *</label>
                     <input
                       type="text" required={deliveryType === 'University'} value={universityName}
-                      onChange={(e) => setUniversityName(e.target.value)} placeholder="e.g., Dhaka University"
+                      onChange={(e) => setUniversityName(e.target.value)} placeholder="e.g., Jahangirnagar University"
                       className="w-full text-xs border border-gray-200 bg-gray-50/50 p-2.5 rounded-xl focus:bg-white focus:outline-purple-500 font-medium"
                     />
                   </div>
@@ -408,7 +408,7 @@ export default function Cart() {
                     <label className="block text-[9px] font-bold text-gray-400 uppercase mb-1">Residential Hall / Department Lounge *</label>
                     <input
                       type="text" required={deliveryType === 'University'} value={hallName}
-                      onChange={(e) => setHallName(e.target.value)} placeholder="e.g., Jagannath Hall, Room 302"
+                      onChange={(e) => setHallName(e.target.value)} placeholder="e.g., Bangabandhu Sheikh Mujibur Rahman Hall, Room 410"
                       className="w-full text-xs border border-gray-200 bg-gray-50/50 p-2.5 rounded-xl focus:bg-white focus:outline-purple-500 font-medium"
                     />
                   </div>
