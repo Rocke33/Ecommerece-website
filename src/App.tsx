@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import ScrollToTop from './components/ScrollToTop';
 import ErrorBoundary from './components/ErrorBoundary'; // 🚀 Implemented from Step 5
 import ProtectedRoute from './components/ProtectedRoute'; // 🛡️ Implemented from Step 6
@@ -64,6 +64,9 @@ export default function App() {
                 </ProtectedRoute>
               } 
             />
+
+            {/* 🚀 Catch-all fallback */}
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
       </BrowserRouter>
