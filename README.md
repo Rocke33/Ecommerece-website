@@ -38,3 +38,7 @@ A high-performance, full-stack Single Page Application (SPA) e-commerce hub engi
 ├── vercel.json             # Single Page Application rewrite rules & cache routing
 ├── package.json            # Package dependencies 
 └── README.md               # Repository documentation
+
+Developer: Rocket Ahamed (@Rocke33)
+
+Branding: Rocke Dev Labs
