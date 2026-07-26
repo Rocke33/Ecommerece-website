@@ -27,8 +27,15 @@ export default function CheckoutForm({ cartItems, subtotal, onOrderSuccess }: Ch
   const handleSubmitOrder = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!fullName || !phone) {
+    const sanitizedPhone = phone.replace(/\D/g, '');
+
+    if (!fullName || !sanitizedPhone) {
       alert("Please fill in your Name and Contact Number.");
+      return;
+    }
+
+    if (!/^\d+$/.test(sanitizedPhone)) {
+      alert("Phone number must contain numbers only.");
       return;
     }
 
@@ -118,8 +125,12 @@ export default function CheckoutForm({ cartItems, subtotal, onOrderSuccess }: Ch
           <div>
             <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Active Phone Number *</label>
             <input
-              type="tel" required value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              type="tel"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              required
+              value={phone}
+              onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
               placeholder="e.g., 01XXXXXXXXX"
               className="w-full text-xs border border-gray-200 bg-gray-50/50 p-2.5 rounded-xl focus:bg-white focus:outline-blue-500 font-medium"
             />

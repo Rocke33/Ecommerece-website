@@ -85,8 +85,14 @@ export default function Cart() {
     setUiError(null);
     setUiSuccess(null);
 
-    if (!contactNumber.trim()) {
+    const sanitizedContactNumber = contactNumber.replace(/\D/g, '');
+
+    if (!sanitizedContactNumber) {
       setUiError("Please provide a valid active Contact Phone Number.");
+      return;
+    }
+    if (!/^\d+$/.test(sanitizedContactNumber)) {
+      setUiError("Phone number must contain numbers only.");
       return;
     }
     if (deliveryType === 'Standard' && (!district.trim() || !upazila.trim() || !villageArea.trim())) {
@@ -342,7 +348,13 @@ export default function Cart() {
               <div>
                 <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Active Contact Number *</label>
                 <input
-                  type="tel" required value={contactNumber} onChange={(e) => setContactNumber(e.target.value)} placeholder="e.g., 017XXXXXXXX"
+                  type="tel"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  required
+                  value={contactNumber}
+                  onChange={(e) => setContactNumber(e.target.value.replace(/\D/g, ''))}
+                  placeholder="e.g., 017XXXXXXXX"
                   className="w-full text-xs border border-gray-200 bg-gray-50/50 p-2.5 rounded-xl focus:bg-white focus:outline-blue-500 font-mono font-bold"
                 />
               </div>
